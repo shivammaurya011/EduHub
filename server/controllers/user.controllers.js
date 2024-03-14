@@ -5,6 +5,9 @@ const jwt = require("jsonwebtoken")
 const signup = async (req, res) => {
     try {
         const { fullName, email, password } = req.body;
+        if(!fullName || !email || !password){
+            return res
+        }
         const userPresent = await User.findOne({ email });
         if (userPresent) {
             return res.status(400).json({ error: 'User with this email already exists' });
@@ -32,6 +35,9 @@ const signup = async (req, res) => {
 const signin = async (req, res) => {
     try {
         const { email, password } = req.body;
+        if(!email || !password){
+            return res
+        }
         const user = await User.findOne({ email }).select('+password');
         if (!user) {
             return res.status(401).json({ error: 'Invalid credentials' });
@@ -42,8 +48,8 @@ const signin = async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-        res.cookie("token", token, { httpOnly: true });
-        res.status(200).json({ message: 'Signin successful', user });
+        res.cookie("token", token);
+        res.status(200).json({ message: 'Signin successful', user, token });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal server error' });
@@ -62,8 +68,8 @@ const signout = (req, res) =>{
 
 const profile = async (req, res) => {
     try {
-        const { userId } = req.params;
-        const user = await User.findById(userId);
+        console.log(req.user)
+        const user = await User.findById(req.user.userId);
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
